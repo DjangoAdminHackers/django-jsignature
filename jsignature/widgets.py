@@ -6,6 +6,7 @@ import json
 from django.forms.widgets import HiddenInput
 from django.core import validators
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from jsignature.settings import JSIGNATURE_DEFAULT_CONFIG
@@ -63,17 +64,12 @@ class JSignatureWidget(HiddenInput):
 
         # Prepare value
         value = self.prep_value(value)
-
-        # Build output
-        hidden_input = super(JSignatureWidget, self).render(name, value, attrs)
-        div = u'<div id="%s" class="jsign-container"></div>' % jsign_id
-        clr = u'<input type="button" value="%s" class="btn">' % _('Reset')
-        js = u'$("#%s").jSignature(%s);' % (
-            jsign_id, json.dumps(jsignature_config))
-        js += u'$("#%s").jSignature("setData", %s,"native");' % (
-            jsign_id, value)
-        js = u'<script type="text/javascript">%s</script>' % js
-        out = u'<div class="jsign-wrapper">%s%s%s%s</div>' % (
-            hidden_input, div, clr, js)
+        out = render_to_string('jsignature/widget.html', {
+            'hidden': super(JSignatureWidget, self).render(name, value, attrs),
+            'jsign_id': jsign_id,
+            'reset_btn_text': _('Reset'),
+            'config': mark_safe(json.dumps(jsignature_config)),
+            'value': mark_safe(value),
+        })
 
         return mark_safe(out)
